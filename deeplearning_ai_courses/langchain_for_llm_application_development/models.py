@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-FOUNDATION_MODEL = "gemini-2.0-flash-exp"
+FOUNDATION_MODEL = "gemini-2.0-flash-lite"
 
 def get_api_key():
     load_env()
