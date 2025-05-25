@@ -3,3 +3,7 @@
 .pyc
 **/__pycache__
 **/data
+*.db
+*.sqlite3
+**/models
+**/mlruns
