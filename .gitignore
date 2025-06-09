@@ -9,3 +9,6 @@
 **/mlruns
 **/output
 **/artifacts
+*.log
+**/checkpoints
+**/logs
