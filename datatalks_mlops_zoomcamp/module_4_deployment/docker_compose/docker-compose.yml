@@ -1,0 +1,69 @@
+services:
+  minio:
+    image: minio/minio
+    expose:
+      - "9000"
+    ports:
+      - "9000:9000"
+      # MinIO Console is available at http://localhost:9001
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: "minio_user"
+      MINIO_ROOT_PASSWORD: "minio_password"
+    healthcheck:
+      test: timeout 5s bash -c ':> /dev/tcp/127.0.0.1/9000' || exit 1
+      interval: 1s
+      timeout: 10s
+      retries: 5
+    command: server /data --console-address ":9001"
+    networks:
+      - ml-network
+
+  minio-create-bucket:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      bash -c "
+      mc alias set minio http://minio:9000 minio_user minio_password &&
+      if ! mc ls minio/bucket; then
+        mc mb minio/bucket
+      else
+        echo 'bucket already exists'
+      fi
+      "
+    networks:
+      - ml-network
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.22.1
+    depends_on:
+      minio-create-bucket:
+        condition: service_completed_successfully
+    ports:
+      - "5000:5000"
+    working_dir: /mlflow
+    volumes:
+      - ./mlflow_server/mlruns:/mlflow/mlruns
+      - ./mlflow_server/mlflow.db:/mlflow/mlflow.db
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - AWS_ACCESS_KEY_ID=minio_user
+      - AWS_SECRET_ACCESS_KEY=minio_password
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - MLFLOW_S3_IGNORE_TLS=true
+    command: >
+      bash -c "
+      pip install boto3 && 
+      mlflow server 
+      --backend-store-uri sqlite:///mlflow.db 
+      --artifacts-destination s3://bucket
+      --host 0.0.0.0 --port 5000
+      "
+    networks:
+      - ml-network
+
+networks:
+  ml-network:
+    driver: bridge

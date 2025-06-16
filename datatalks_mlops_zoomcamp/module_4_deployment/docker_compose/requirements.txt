@@ -15,7 +15,7 @@ requests-oauthlib==2.0.0
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 uvicorn==0.34.3
-scikit-learn==1.7
-mlflow==2.22.1
-mlflow-skinny==2.22.1
+scikit-learn==1.6.1
+mlflow==2.22.0
 psutil==7.0.0
+boto3==1.38.23
