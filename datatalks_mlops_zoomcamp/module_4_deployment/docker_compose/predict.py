@@ -1,11 +1,6 @@
 import os
-
-import pickle
-
 from flask import Flask, request, jsonify
-
 import mlflow
-from mlflow import MlflowClient
 
 MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI")
 MLFLOW_EXPERIMENT_NAME = os.environ.get("MLFLOW_EXPERIMENT_NAME")
