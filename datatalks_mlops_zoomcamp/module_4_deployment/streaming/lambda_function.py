@@ -1,10 +1,22 @@
+import os
 import json
 import base64
 import boto3
+import mlflow
 
 client = boto3.client('kinesis')
 
-OUTPUT_STREAM_NAME = 'data_talks_club-mlops-course-ride_prediction-results'
+DRY_RUN = os.environ.get("DRY_RUN", False)
+
+RUN_ID = os.environ.get("RUN_ID", '8d6b2c8289b94d1cb40a313e0bf92aca')
+MODEL_BUCKET_NAME = os.environ.get("MODEL_BUCKET_NAME", 'data-talks-club-mlops-remote-s3-bucket')
+
+OUTPUT_STREAM_NAME = os.environ.get("OUTPUT_STREAM_NAME", 'data_talks_club-mlops-course-ride_prediction-results')
+
+def load_model():
+    model_uri = f's3://{MODEL_BUCKET_NAME}/1/{RUN_ID}/artifacts/model'
+    print(f'Loading model from uri: {model_uri}')
+    return mlflow.pyfunc.load_model(model_uri)
 
 def prepare_features(ride):
     features = {}
@@ -12,8 +24,9 @@ def prepare_features(ride):
     features['trip_distance'] = ride['trip_distance']
     return features
 
-def predict(features):
-    return 10.0
+def predict(model, X):
+     y_pred = model.predict(X)
+     return float(y_pred[0])
 
 def send_results(results):
     output_records = []
@@ -45,7 +58,8 @@ def lambda_handler(event, context):
             features = prepare_features(ride)
             print(f"Prepared Features: {features}")
 
-            prediction = predict(features)
+            model = load_model()
+            prediction = predict(model, features)
 
             record_result = {
                 'model': 'ride_duration_prediction_model',
@@ -59,17 +73,17 @@ def lambda_handler(event, context):
 
             prediction_results.append(record_result)
 
-            # TODO: Do interesting work based on the new data
         except Exception as e:
             print(f"An error occurred {e}")
             raise e
 
-    try:
-        response = send_results(prediction_results)
-    except Exception as e:
-        print("Failed to send record to Kinesis", e)
+    if not DRY_RUN:
+        try:
+            send_results(prediction_results)
+        except Exception as e:
+            print("Failed to send record to Kinesis", e)
 
-    print(f"Successfully processed records and emitted {len(event['Records'])} results.")
+        print(f"Successfully processed records and emitted {len(event['Records'])} results.")
 
     return {
         'prediction_results': prediction_results
