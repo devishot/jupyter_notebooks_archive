@@ -2,7 +2,6 @@ import os
 import json
 import base64
 import boto3
-import mlflow
 
 client = boto3.client('kinesis')
 
@@ -13,10 +12,25 @@ MODEL_BUCKET_NAME = os.environ.get("MODEL_BUCKET_NAME", 'data-talks-club-mlops-r
 
 OUTPUT_STREAM_NAME = os.environ.get("OUTPUT_STREAM_NAME", 'data_talks_club-mlops-course-ride_prediction-results')
 
+model = None
+
 def load_model():
-    model_uri = f's3://{MODEL_BUCKET_NAME}/1/{RUN_ID}/artifacts/model'
-    print(f'Loading model from uri: {model_uri}')
-    return mlflow.pyfunc.load_model(model_uri)
+    import mlflow
+    global model
+    if model is None:
+        model_uri = f's3://{MODEL_BUCKET_NAME}/1/{RUN_ID}/artifacts/model'
+        print(f'Loading model from uri: {model_uri}')
+        model = mlflow.pyfunc.load_model(model_uri)
+    return model
+
+def parse_record(record):
+    record_data = base64.b64decode(record['kinesis']['data']).decode('utf-8')
+    print(f"Record Data: {record_data}")
+    
+    record_data_json = json.loads(record_data)
+    ride = record_data_json['ride']
+    ride_id = record_data_json['ride_id']
+    return ride, ride_id
 
 def prepare_features(ride):
     features = {}
@@ -44,21 +58,22 @@ def send_results(results):
 def lambda_handler(event, context):
     prediction_results = []
 
+    try:
+        loaded_model = load_model()
+    except Exception as e:
+        print(f"Failed to load model: {e}")
+        raise e
+
     for record in event['Records']:
         try:
             print(f"Processed Kinesis Event - EventID: {record['eventID']}")
-            
-            record_data = base64.b64decode(record['kinesis']['data']).decode('utf-8')
-            print(f"Record Data: {record_data}")
-            
-            record_data_json = json.loads(record_data)
-            ride = record_data_json['ride']
-            ride_id = record_data_json['ride_id']
+
+            ride, ride_id = parse_record(record)
+            print(f"Parsed Ride - RideID: {ride_id}, Ride: {ride}")
 
             features = prepare_features(ride)
             print(f"Prepared Features: {features}")
 
-            model = load_model()
             prediction = predict(model, features)
 
             record_result = {
