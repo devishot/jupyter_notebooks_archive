@@ -4,12 +4,8 @@ import uuid
 
 EVENTS = [
     {
-        "ride": {
-            "PULocationID": 10,
-            "DOLocationID": 50,
-            "trip_distance": 40
-        },
-        "ride_id": None
+        "ride": {"PULocationID": 10, "DOLocationID": 50, "trip_distance": 40},
+        "ride_id": None,
     }
 ]
 
@@ -19,10 +15,8 @@ for event in EVENTS:
     event['ride_id'] = ride_id
     records.append(
         {
-            "Data": base64.b64encode(
-                json.dumps(event).encode("utf-8")
-            ).decode("utf-8"),
-            "PartitionKey": ride_id
+            "Data": base64.b64encode(json.dumps(event).encode("utf-8")).decode("utf-8"),
+            "PartitionKey": ride_id,
         }
     )
 

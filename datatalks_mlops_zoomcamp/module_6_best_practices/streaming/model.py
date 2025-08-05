@@ -5,8 +5,10 @@ import os
 
 model = None
 
+
 def load_model(model_uri: str):
     import mlflow
+
     global model
     if model is None:
         print(f'Loading model from uri: {model_uri}')
@@ -14,7 +16,7 @@ def load_model(model_uri: str):
     return model
 
 
-class KinesisCallback():
+class KinesisCallback:
     def __init__(self, output_stream_name):
         self.output_stream_name = output_stream_name
         self.client = self.create_client()
@@ -31,10 +33,11 @@ class KinesisCallback():
         self.client.put_record(
             StreamName=self.output_stream_name,
             Data=json.dumps(record),
-            PartitionKey=ride_id
+            PartitionKey=ride_id,
         )
 
-class ModelService():
+
+class ModelService:
     def __init__(self, model, model_version, callbacks=None):
         self.model = model
         self.model_version = model_version
@@ -43,7 +46,7 @@ class ModelService():
     def parse_record(self, record):
         record_data = base64.b64decode(record['kinesis']['data']).decode('utf-8')
         print(f"Record Data: {record_data}")
-        
+
         record_data_json = json.loads(record_data)
         ride = record_data_json['ride']
         ride_id = record_data_json['ride_id']
@@ -78,10 +81,7 @@ class ModelService():
                 record_result = {
                     'model': 'ride_duration_prediction_model',
                     'version': self.model_version,
-                    'prediction': {
-                        'ride_duration': prediction,
-                        'ride_id': ride_id
-                    }
+                    'prediction': {'ride_duration': prediction, 'ride_id': ride_id},
                 }
                 print(f"Prediction Result: {record_result}")
 
@@ -94,9 +94,8 @@ class ModelService():
                 print(f"An error occurred {e}")
                 raise e
 
-        return {
-            'prediction_results': prediction_results
-        }
+        return {'prediction_results': prediction_results}
+
 
 def init(model_path: str, run_id: str, prediction_stream_name: str, test_run: bool):
     loaded_model = load_model(model_path)

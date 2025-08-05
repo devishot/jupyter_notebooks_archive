@@ -3,10 +3,14 @@ import os
 import model
 
 DRY_RUN = os.environ.get("DRY_RUN", False)
-RUN_ID = os.environ.get("RUN_ID")#, '8d6b2c8289b94d1cb40a313e0bf92aca')
+RUN_ID = os.environ.get("RUN_ID")  # , '8d6b2c8289b94d1cb40a313e0bf92aca')
 MODEL_LOCATION = os.environ.get("MODEL_LOCATION", None)
-MODEL_BUCKET_NAME = os.environ.get("MODEL_BUCKET_NAME")#, 'data-talks-club-mlops-remote-s3-bucket')
-OUTPUT_STREAM_NAME = os.environ.get("OUTPUT_STREAM_NAME")#, 'data_talks_club-mlops-course-ride_prediction-results')
+MODEL_BUCKET_NAME = os.environ.get(
+    "MODEL_BUCKET_NAME"
+)  # , 'data-talks-club-mlops-remote-s3-bucket')
+OUTPUT_STREAM_NAME = os.environ.get(
+    "OUTPUT_STREAM_NAME"
+)  # , 'data_talks_club-mlops-course-ride_prediction-results')
 
 print(f"DRY_RUN: {DRY_RUN}")
 print(f"RUN_ID: {RUN_ID}")
@@ -21,6 +25,7 @@ else:
     model_path = MODEL_LOCATION
 
 model_service = model.init(model_path, RUN_ID, OUTPUT_STREAM_NAME, DRY_RUN)
+
 
 def lambda_handler(event, context):
     return model_service.lambda_handler(event, context)
