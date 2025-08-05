@@ -1,0 +1,30 @@
+services:
+  backend:
+    image: ${LOCAL_IMAGE_NAME}
+    ports:
+      - "8080:8080"
+    environment:
+      - AWS_DEFAULT_REGION=eu-central-1
+      - KINESIS_ENDPOINT_URL=http://kinesis:4566
+      # - DRY_RUN=True
+      - RUN_ID='8d6b2c8289b94d1cb40a313e0bf92aca'
+      - MODEL_LOCATION=/app/model
+      - OUTPUT_STREAM_NAME='data_talks_club-mlops-course-ride_prediction-results'
+    volumes:
+      - "~/.aws:/root/.aws"
+      - "./model:/app/model"
+    # command: python lambda_function.py
+  kinesis:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566"   # Main edge port for all AWS services
+      - "4571:4571"   # Optional: LocalStack internal
+    environment:
+      - SERVICES=kinesis
+      - DEBUG=1
+      - LOCALSTACK_PERSISTENCE=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - ./localstack:/var/lib/localstack   # Optional: persistence
+      - /var/run/docker.sock:/var/run/docker.sock

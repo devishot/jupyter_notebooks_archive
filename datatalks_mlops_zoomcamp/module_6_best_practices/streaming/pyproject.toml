@@ -1,0 +1,14 @@
+[tool.pylint]
+# Other config like plugins, etc.
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = '''missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    missing-final-newline
+'''
+
+[tool.black]
+line-length = 88
+target-version = ['py313'] 
+skip-string-normalization = true

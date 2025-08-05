@@ -1,9 +1,10 @@
+from pathlib import Path
 import model
 
 class ModelMock:
     def __init__(self, value):
         self.value = value
-    
+
     def prepare_features(self, X):
         X['PU_DO'] = f"{X['PULocationID']}_{X['DOLocationID']}"
         del X['PULocationID']
@@ -42,15 +43,22 @@ def test_predict():
     expected_prediction = 10
     assert prediction == expected_prediction
 
+def read_text(filename):
+    test_dir = Path(__file__).parent
+    filename = f'{test_dir}/{filename}'
+    with open(filename, 'rt', encoding='utf-8') as f:
+        return f.read().strip()
+
 def test_lambda_handler():
     model_version = '1'
     model_mock = ModelMock(10)
     model_service = model.ModelService(model_mock, model_version)
+    base64_input = read_text('data.b64')
     event = {
         'Records': [
             {
                 'kinesis': {
-                    'data': 'eyJyaWRlIjogeyJQVUxvY2F0aW9uSUQiOiAxMCwgIkRPTG9jYXRpb25JRCI6IDUwLCAidHJpcF9kaXN0YW5jZSI6IDQwfSwgInJpZGVfaWQiOiAiZTRlMWY5OTI0MmRiNDc3NmFiNTZkZmU2YTg3YTM5ZTgifQ=='
+                    'data': base64_input
                 },
                 'eventID': 'shardId-000000000000:49630081666084879290581185630324770398608704880802529282'
             }

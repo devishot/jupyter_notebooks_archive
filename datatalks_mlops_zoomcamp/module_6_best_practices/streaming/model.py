@@ -1,14 +1,14 @@
 import json
 import base64
 import boto3
+import os
 
 model = None
 
-def load_model(model_bucket_name: str, run_id: str):
+def load_model(model_uri: str):
     import mlflow
     global model
     if model is None:
-        model_uri = f's3://{model_bucket_name}/1/{run_id}/artifacts/model'
         print(f'Loading model from uri: {model_uri}')
         model = mlflow.pyfunc.load_model(model_uri)
     return model
@@ -17,7 +17,14 @@ def load_model(model_bucket_name: str, run_id: str):
 class KinesisCallback():
     def __init__(self, output_stream_name):
         self.output_stream_name = output_stream_name
-        self.client = boto3.client('kinesis')
+        self.client = self.create_client()
+
+    def create_client(self):
+        endpoint_url = os.getenv('KINESIS_ENDPOINT_URL')
+        if endpoint_url:
+            self.client = boto3.client('kinesis', endpoint_url=endpoint_url)
+        else:
+            self.client = boto3.client('kinesis')
 
     def put_record(self, record):
         ride_id = record['prediction']['ride_id']
@@ -53,6 +60,7 @@ class ModelService():
         return float(y_pred[0])
 
     def lambda_handler(self, event, context):
+        # pylint: disable=unused-argument
         prediction_results = []
 
         for record in event['Records']:
@@ -90,7 +98,11 @@ class ModelService():
             'prediction_results': prediction_results
         }
 
-def init(model_bucket_name: str, model_version: str, run_id: str, prediction_stream_name: str, test_run: bool):
-    model = load_model(model_bucket_name, run_id)
+def init(model_path: str, run_id: str, prediction_stream_name: str, test_run: bool):
+    loaded_model = load_model(model_path)
+
+    if test_run:
+        return ModelService(loaded_model, run_id)
+
     stream = KinesisCallback(prediction_stream_name)
-    return ModelService(model, model_version, callbacks=[stream.put_record])
+    return ModelService(loaded_model, run_id, callbacks=[stream.put_record])
