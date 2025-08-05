@@ -12,3 +12,5 @@
 *.log
 **/checkpoints
 **/logs
+**/integration_tests/model/*
+**/cache
