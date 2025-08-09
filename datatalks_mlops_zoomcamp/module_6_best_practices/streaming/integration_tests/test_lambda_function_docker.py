@@ -1,8 +1,8 @@
-import sys
 import json
+import sys
+
 import requests
 from deepdiff import DeepDiff
-
 
 KINESIS_EVENT_FORMAT = {
     "Records": [

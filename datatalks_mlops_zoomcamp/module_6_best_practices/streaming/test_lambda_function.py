@@ -1,5 +1,6 @@
-import sys
 import json
+import sys
+
 import lambda_function
 
 KINESIS_EVENT_FORMAT = {
